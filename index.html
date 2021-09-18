@@ -1,0 +1,131 @@
+<!doctype html>
+<html>
+<head>
+	<title>Sobel Filter</title>
+	<script type='text/javascript'>
+	
+	function createGreyImage(context, width, height) {
+		const size = width * height;
+		const greyImage = new Array(size);
+		
+		const imageData = context.getImageData(0, 0, width, height);
+		const data = imageData.data;
+	
+		for (let i= 0, j = 0; i < size; i++, j+=4) {
+			greyImage[i] = (data[j] + data[j+1] + data[j+2]) / ( 3 * 256);			
+		}	
+		
+		return greyImage;
+	}
+		
+	function Img(image, width, height) {
+		this.image = image;
+		this.width = width;
+		this.height = height;
+	}
+	
+	Img.prototype.at = function(x, y) {
+		if (x < 0) { x = 0; }
+		if (this.width <= x) { x = this.width - 1; }
+		if (y < 0) { y = 0; }
+		if (this.height <= y) { y = this.height - 1; }
+		
+		return this.image[(y * this.width) + x];
+	}
+	
+	function sobel(image, width, height) {
+		const size = width * height;
+		const result = new Array(size);
+		
+		const img = new Img(image, width, height);
+		const k = [
+			[-1,  0, 1],
+			[-2,  0, 2],
+			[-1,  0, 1]
+		];
+		
+		let i = 0;
+		for(let y = 0; y < height; y++) {
+			for(let x = 0; x < width; x++) {
+				const gx = 
+					(k[0][0] * img.at(x - 1, y - 1)) + (k[0][1] * img.at(x, y - 1)) + (k[0][2] * img.at(x + 1, y - 1)) + 
+					(k[1][0] * img.at(x - 1, y    )) + (k[1][1] * img.at(x, y    )) + (k[1][2] * img.at(x + 1, y    )) + 
+					(k[2][0] * img.at(x - 1, y + 1)) + (k[2][1] * img.at(x, y + 1)) + (k[2][2] * img.at(x + 1, y + 1));
+				const gy = 
+					(k[0][0] * img.at(x - 1, y - 1)) + (k[1][0] * img.at(x, y - 1)) + (k[2][0] * img.at(x + 1, y - 1)) + 
+					(k[0][1] * img.at(x - 1, y    )) + (k[1][1] * img.at(x, y    )) + (k[2][1] * img.at(x + 1, y    )) + 
+					(k[0][2] * img.at(x - 1, y + 1)) + (k[1][2] * img.at(x, y + 1)) + (k[2][2] * img.at(x + 1, y + 1));
+					
+				result[i] = Math.sqrt(gx * gx) + (gy * gy);
+				i++;
+			}
+		}
+		
+		return result;
+	}
+	
+	function drawImage(context, image, width, height) {
+		const size = width * height;
+		const imageData = context.createImageData(width, height);
+		const data = imageData.data;
+		for (let i = 0, j = 0; i < size; i++, j+=4) {			
+				const value = Math.floor(256 * image[i]);
+			
+				data[j    ] = value;
+				data[j + 1] = value;
+				data[j + 2] = value;
+				data[j + 3] = 255;
+		}		
+		context.putImageData(imageData, 0, 0);	
+	}
+	
+	function updateCanvas() {
+		const canvas = document.querySelector('#canvas');
+		const image = document.querySelector('#image');
+	
+		const context = canvas.getContext('2d');
+		const width = image.naturalWidth;
+		const height = image.naturalHeight;
+		canvas.height = height;
+		canvas.width = width;
+		context.drawImage(image, 0, 0);
+		
+		const greyImage = createGreyImage(context, width, height);
+		const resultImage = sobel(greyImage, width, height);
+
+		drawImage(context, resultImage, width, height);
+		
+	}
+	
+	function onFileSelected(event) {
+		const file = event.target.files[0];
+		const reader = new FileReader();
+		reader.onload = (e) => {
+			const image = document.querySelector('#image');
+			image.onload = updateCanvas;
+			image.src = e.target.result;
+		};
+		reader.readAsDataURL(file);
+		
+		
+	}
+	
+	function startup() {
+		const fileChooser = document.querySelector('#file_chooser');
+		fileChooser.addEventListener('change', onFileSelected, false);
+		
+		updateCanvas();
+	}
+	
+	</script>
+</head>
+<body onload='startup();'>
+	<div>
+		<input id='file_chooser' type='file' />
+	</div>
+	<div>
+		<img id='image' src='demo.jpg'/>
+		<canvas id='canvas' width='' height='' ></canvas>
+	</div>
+</body>
+</html>
