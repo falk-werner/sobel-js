@@ -69,7 +69,7 @@
 		const imageData = context.createImageData(width, height);
 		const data = imageData.data;
 		for (let i = 0, j = 0; i < size; i++, j+=4) {			
-				const value = Math.floor(256 * image[i]);
+				const value = 255 - Math.floor(256 * image[i]);
 			
 				data[j    ] = value;
 				data[j + 1] = value;
